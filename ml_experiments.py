@@ -12,8 +12,12 @@ from typing import List, Tuple
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+from rich.console import Console
+from rich.table import Table
 
 from dataset import SAMPLE_POSTS, TRUE_LABELS
+
+console = Console()
 
 
 def train_ml_model(
@@ -70,16 +74,27 @@ def evaluate_on_dataset(
     X = vectorizer.transform(texts)
     preds = model.predict(X)
 
-    print("=== ML Model Evaluation on Dataset ===")
+    table = Table(title="ML Model Evaluation")
+    table.add_column("Text", style="cyan", no_wrap=False)
+    table.add_column("Predicted", style="magenta")
+    table.add_column("Actual", style="green")
+    table.add_column("Correct?", justify="center")
+
     correct = 0
     for text, true_label, pred_label in zip(texts, labels, preds):
         is_correct = pred_label == true_label
         if is_correct:
             correct += 1
-        print(f'"{text}" -> predicted={pred_label}, true={true_label}')
+            mark = "[green]✔[/green]"
+        else:
+            mark = "[red]✘[/red]"
+        
+        table.add_row(text, pred_label, true_label, mark)
+    
+    console.print(table)
 
     accuracy = accuracy_score(labels, preds)
-    print(f"\nAccuracy on this dataset: {accuracy:.2f}")
+    console.print(f"\nAccuracy on this dataset: [bold blue]{accuracy:.2f}[/bold blue]")
     return accuracy
 
 
@@ -107,23 +122,23 @@ def run_interactive_loop(
 
     Type 'quit' or press Enter on an empty line to exit.
     """
-    print("\n=== Interactive Mood Machine (ML model) ===")
-    print("Type a sentence to analyze its mood.")
-    print("Type 'quit' or press Enter on an empty line to exit.\n")
+    console.print("\n=== Interactive Mood Machine (ML model) ===", style="bold cyan")
+    console.print("Type a sentence to analyze its mood.")
+    console.print("Type 'quit' or press Enter on an empty line to exit.\n")
 
     while True:
-        user_input = input("You: ").strip()
+        user_input = console.input("[bold green]You:[/bold green] ").strip()
         if user_input == "" or user_input.lower() == "quit":
-            print("Goodbye from the ML Mood Machine.")
+            console.print("Goodbye from the ML Mood Machine.", style="bold yellow")
             break
 
         label = predict_single_text(user_input, vectorizer, model)
-        print(f"ML model: {label}")
+        console.print(f"ML model: [bold magenta]{label}[/bold magenta]")
 
 
 if __name__ == "__main__":
-    print("Training an ML model on SAMPLE_POSTS and TRUE_LABELS from dataset.py...")
-    print("Make sure you have added enough labeled examples before running this.\n")
+    console.print("[bold yellow]Training an ML model on SAMPLE_POSTS and TRUE_LABELS from dataset.py...[/bold yellow]")
+    console.print("Make sure you have added enough labeled examples before running this.\n")
 
     # Train the model on the current dataset.
     vectorizer, model = train_ml_model(SAMPLE_POSTS, TRUE_LABELS)
